@@ -57,6 +57,12 @@ namespace Integracao
             CriarPasta
         }
 
+        public enum eRetornoLink
+        {
+            PDF,
+            LINK
+        }
+
         /// <summary>
         /// Aciona o serviço a ser utilizado para acesso ao Google Drive
         /// </summary>
@@ -149,7 +155,7 @@ namespace Integracao
         /// <param name="descricaoArquivo">Descrição do arquivo</param>
         /// <param name="emailDestinatario">Email do destinatario que tera acesso ao compartilhamento, se vázio o compartilhamento é para qualquer um</param>
         /// <returns></returns>
-        public static string UploadFile(string caminhoArquivo, string nomeArquivo, eGoogleDriveMimeType tipoArquivo, string descricaoArquivo, string emailDestinatario = "")
+        public static string UploadFile(string caminhoArquivo, string nomeArquivo, eGoogleDriveMimeType tipoArquivo, string descricaoArquivo, eRetornoLink retornoLink , string emailDestinatario = "")
         {
             using (Stream stream = new FileStream(caminhoArquivo, FileMode.Open, FileAccess.Read))
             {
@@ -178,7 +184,13 @@ namespace Integracao
 
                 PermitirCompartilhamentoArquivo(service, request, emailDestinatario);
 
-                return $"https://drive.google.com/file/d/{request.ResponseBody.Id}/view?usp=sharing";
+                if (retornoLink == eRetornoLink.LINK) {
+                    return $"https://drive.google.com/file/d/{request.ResponseBody.Id}/view?usp=sharing";
+                }else
+                {
+                    return $"https://drive.google.com/uc?export=download&id={request.ResponseBody.Id}";
+                }
+
             }
         }
 
