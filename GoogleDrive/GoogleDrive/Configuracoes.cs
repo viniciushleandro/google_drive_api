@@ -19,11 +19,13 @@ namespace Integracao
             InitializeComponent();
         }
 
-        private void btnCriarPasta_Click(object sender, EventArgs e)
+        private async void btnCriarPasta_Click(object sender, EventArgs e)
         {
-            System.Threading.Tasks.Task<string> idPasta;
             string nomePasta = Interaction.InputBox("Informe o nome da pasta a ser criada. Se vazio, nome padrão: Arquivos.", "Criar Pasta");
-            if (nomePasta == "")
+
+            System.Threading.Tasks.Task<string> idPasta;
+
+            if (string.IsNullOrEmpty(nomePasta))
             {
                 idPasta = GoogleDrive.CreateFolder("Arquivos");
             }
@@ -31,7 +33,8 @@ namespace Integracao
             {
                 idPasta = GoogleDrive.CreateFolder(nomePasta);
             }
-            txtIdPasta.Text = idPasta.Result;
+
+            txtIdPasta.Text = await idPasta;
         }
 
         private async void btnAutorizarApi_Click(object sender, EventArgs e)
