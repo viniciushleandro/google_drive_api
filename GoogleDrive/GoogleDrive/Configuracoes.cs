@@ -21,7 +21,7 @@ namespace Integracao
 
         private void btnCriarPasta_Click(object sender, EventArgs e)
         {
-            string idPasta = "";
+            System.Threading.Tasks.Task<string> idPasta;
             string nomePasta = Interaction.InputBox("Informe o nome da pasta a ser criada. Se vazio, nome padrão: Arquivos.", "Criar Pasta");
             if (nomePasta == "")
             {
@@ -31,17 +31,17 @@ namespace Integracao
             {
                 idPasta = GoogleDrive.CreateFolder(nomePasta);
             }
-            txtIdPasta.Text = idPasta;
+            txtIdPasta.Text = idPasta.Result;
         }
 
-        private void btnAutorizarApi_Click(object sender, EventArgs e)
+        private async void btnAutorizarApi_Click(object sender, EventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 if (!string.IsNullOrEmpty(dlg.FileName))
                 {
-                    UserCredential credenciais = GoogleDrive.Autenticar(dlg.FileName);
+                    UserCredential credenciais = await GoogleDrive.Autenticar(dlg.FileName);
                     if (credenciais != null)
                     {
                         txtAccessToken.Text = credenciais.Token.AccessToken;
@@ -84,7 +84,7 @@ namespace Integracao
 
         private void btnEnviarArq_Click(object sender, EventArgs e)
         {
-            GoogleDrive.UploadFile(txtCaminArq.Text, txtNomeArq.Text, GoogleDrive.eGoogleDriveMimeType.PDF, txtDescrArq.Text);
+            GoogleDrive.UploadFile(txtCaminArq.Text, txtNomeArq.Text, GoogleDrive.eGoogleDriveMimeType.PDF, txtDescrArq.Text,GoogleDrive.eRetornoLink.LINK);
         }
     }
 }

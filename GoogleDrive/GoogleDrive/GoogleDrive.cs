@@ -131,18 +131,15 @@ namespace Integracao
         /// </summary>
         /// <param name="nomePasta"></param>
         /// <returns></returns>
-        public static string CreateFolder(string nomePasta)
+        public static async Task<string> CreateFolder(string nomePasta)
         {
-            DriveService service = GetService();
-            Google.Apis.Drive.v3.Data.File driveFolder = new Google.Apis.Drive.v3.Data.File
-            {
-                Name = nomePasta,
-                MimeType = DescricaoEnum(eGoogleDriveMimeType.CriarPasta),
-                Parents = new List<string> { "root" }
-            };
-
+            var service = GetService();
+            var driveFolder = new Google.Apis.Drive.v3.Data.File();
+            driveFolder.Name = nomePasta;
+            driveFolder.MimeType = DescricaoEnum(GoogleDrive.eGoogleDriveMimeType.CriarPasta);
+            driveFolder.Parents = new string[] { "root" };
             var command = service.Files.Create(driveFolder);
-            var file = command.Execute();
+            var file = await command.ExecuteAsync();
             return file.Id;
         }
 
@@ -299,52 +296,29 @@ namespace Integracao
         /// </summary>
         /// <param name="caminhoCredencial">Caminho do arquivo json com o client id e a chave secreta</param>
         /// <returns></returns>
-        public static UserCredential Autenticar(string caminhoCredencial)
+        public static async Task<UserCredential> Autenticar(string caminhoCredencial)
         {
-            string[] scopes = {
-            DriveService.Scope.Drive,
-            DriveService.Scope.DriveAppdata,
-            DriveService.Scope.DriveFile,
-            DriveService.Scope.DriveMetadata,
-            DriveService.Scope.DriveMetadataReadonly,
-            DriveService.Scope.DrivePhotosReadonly,
-            DriveService.Scope.DriveReadonly,
-            DriveService.Scope.DriveScripts
-        };
-
-            // Carrega o arquivo JSON contendo o Client ID e a chave secreta
+            string[] scopes = { DriveService.Scope.DriveFile };
             string credenciaisJson = caminhoCredencial;
 
-            // Faz a autorização do usuário
-            UserCredential credenciais = GetCredentials(credenciaisJson, scopes);
+            GoogleClientSecrets clientSecrets;
+            using (var stream = new FileStream(credenciaisJson, FileMode.Open, FileAccess.Read))
+            {
+                clientSecrets = await GoogleClientSecrets.FromStreamAsync(stream);
+            }
+
+            var fileDataStore = new FileDataStore("Google.Apis.Auth");
+
+            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer()
+            {
+                ClientSecrets = clientSecrets.Secrets,
+                Scopes = scopes,
+                DataStore = fileDataStore
+            });
+
+            var credenciais = await new AuthorizationCodeInstalledApp(flow, new LocalServerCodeReceiver()).AuthorizeAsync("user", CancellationToken.None);
 
             return credenciais;
-        }
-
-        /// <summary>
-        /// Retorna as credenciais (RefreshToken e AccessToken) atraves de uma requisição
-        /// </summary>
-        /// <param name="credenciaisJson"></param>
-        /// <param name="scopes"></param>
-        /// <returns></returns>
-        private static UserCredential GetCredentials(string credenciaisJson, string[] scopes)
-        {
-            using (FileStream stream = new FileStream(credenciaisJson, FileMode.Open, FileAccess.Read))
-            {
-                string diretorioArmazenamento = Path.Combine(Path.GetTempPath(), ".credentials");
-
-                var clientSecrets = GoogleClientSecrets.FromStream(stream).Secrets;
-
-                var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    clientSecrets,
-                    scopes,
-                    "user",
-                    System.Threading.CancellationToken.None,
-                    new FileDataStore(diretorioArmazenamento)
-                ).Result;
-
-                return credential;
-            }
         }
     }
 }
